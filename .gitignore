@@ -14,8 +14,11 @@ __pycache__/
 .Python
 
 *.pt
+*.pth
+*.tar
 *.ckpt
 
+checkpoints/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
