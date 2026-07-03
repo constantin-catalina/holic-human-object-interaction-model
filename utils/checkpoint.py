@@ -1,0 +1,84 @@
+"""
+checkpoint.py
+Salvare si incarcare modele.
+"""
+
+import os
+import torch
+from typing import Optional
+
+
+def build_checkpoint_state(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    epoch: int,
+    metrics: dict,
+    save_frozen: bool = False,
+) -> dict:
+    if save_frozen:
+        model_state = model.state_dict()
+    else:
+        # Only save trainable params + buffers (excludes frozen CLIP, saves ~500 MB)
+        trainable_names = {name for name, p in model.named_parameters() if p.requires_grad}
+        model_state = {
+            k: v for k, v in model.state_dict().items()
+            if k in trainable_names or not k.endswith(('.weight', '.bias'))
+        }
+    return {
+        "epoch": epoch,
+        "model_state_dict": model_state,
+        "optimizer_state_dict": optimizer.state_dict(),
+        "metrics": metrics,
+    }
+
+
+def save_checkpoint(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    epoch: int,
+    metrics: dict,
+    checkpoint_dir: str,
+    is_best: bool = False,
+    save_last: bool = False,
+    save_local: bool = True,
+) -> dict:
+    state = build_checkpoint_state(model, optimizer, epoch, metrics)
+
+    if not save_local:
+        return {"checkpoint": None, "best_checkpoint": None, "last_checkpoint": None, "state": state}
+
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    saved = {"checkpoint": None, "best_checkpoint": None, "last_checkpoint": None, "state": state}
+
+    if save_last:
+        last_path = os.path.join(checkpoint_dir, "last_model.pth")
+        torch.save(state, last_path)
+        saved["last_checkpoint"] = last_path
+
+    if is_best:
+        best_path = os.path.join(checkpoint_dir, "best_model.pth")
+        torch.save(state, best_path)
+        saved["best_checkpoint"] = best_path
+        print(f"  --> Salvat best model (FSUM={metrics.get('fsum', 0):.1f})")
+
+    return saved
+
+
+def load_checkpoint(
+    path: str,
+    model: torch.nn.Module,
+    optimizer: Optional[torch.optim.Optimizer] = None,
+    device: str = "cuda",
+    verbose: bool = True,
+) -> dict:
+    checkpoint = torch.load(path, map_location=device, weights_only=False)
+    # strict=False allows loading partial state dicts (e.g. without frozen CLIP weights)
+    missing, unexpected = model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+    if verbose:
+        if missing:
+            print(f"  [INFO] Chei lipsa in checkpoint (parametri frozen, initializati la valori default): {len(missing)}")
+        if unexpected:
+            print(f"  [WARN] Chei neasteptate in checkpoint: {unexpected}")
+        print(f"  --> Incarcat checkpoint din epoch {checkpoint['epoch']}")
+    return checkpoint
