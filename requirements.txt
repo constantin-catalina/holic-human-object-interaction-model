@@ -37,8 +37,7 @@ Pillow==10.1.0
 # Video processing
 opencv-python==4.8.1.78
 av==17.0.0; platform_system == "Windows"
-av==11.0.0; platform_system != "Windows"
-
+av>=12.0.0; platform_system != "Windows"
 # Code quality
 black==23.12.1
 flake8==7.0.0
