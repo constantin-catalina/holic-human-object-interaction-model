@@ -40,9 +40,6 @@ from utils.video_annotation import (
     draw_timeline, save_visualization_video,
 )
 
-# Vizualizare: vezi utils/viz_opencv.py
-
-
 # ---------------------------------------------------------------------------
 # Decodare rezultate
 # ---------------------------------------------------------------------------
@@ -254,7 +251,7 @@ def parse_args():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--dataset-name", type=str, default=None)
     parser.add_argument("--fps", type=int, default=15, help="FPS pentru video output")
-    parser.add_argument("--no-timeline", action="store_true", help="Nu include timeline in video output")
+    parser.add_argument("--no-timeline", action="store_true", default=True,help="Nu include timeline in video output")
     parser.add_argument("--demo-labels", type=str, default=None,
                         help="Override human predictions for demo. Ex: 'pouring,cheering' (splits temporally)")
     parser.add_argument("--demo-segments", type=str, default=None,
